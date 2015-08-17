@@ -2,7 +2,6 @@ package com.foxlinkimage.alex.socketclienttest;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -12,20 +11,15 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class MainActivity extends AppCompatActivity {
     Button sendMsg;
     TextView rcvmsg;
     Socket socket = null;
-    Handler handler;
     public static final String SERVER_IP = "192.168.56.1";
     public static final int SERVER_PORT = 2345;
-    Handler mHandler;
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,11 +36,17 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public class SendTask extends AsyncTask<Void, Byte, Void> {
+    public class SendTask extends AsyncTask<Void, byte[], Void> {
         @Override
-        protected void onProgressUpdate(Byte... values) {
-            String msg = rcvmsg.getText().toString();
-            rcvmsg.setText(msg+ ", " + values[0] );
+        protected void onProgressUpdate(byte[]... values) {
+            Employee objEmployee = new Employee();
+            ByteBuffer bytebuffer= ByteBuffer.wrap(values[0]);
+            bytebuffer.order(ByteOrder.LITTLE_ENDIAN);
+            objEmployee.setByteBuffer(bytebuffer, 0);
+            String name = objEmployee.name.get();
+            int year = objEmployee.year.get();
+            int day = objEmployee.day.get();
+            rcvmsg.setText("The return value shown as below\n name=" + name + ", year=" + String.valueOf(year) + ", day=" + String.valueOf(day));
         }
 
         @Override
@@ -70,9 +70,7 @@ public class MainActivity extends AppCompatActivity {
                     byte[] buffer = new byte[input.available()];
                     if (buffer.length != 0) {
                         input.read(buffer);
-                        //String msg = new String(buffer, "UTF-8");
-                        for(int i=0;i<buffer.length;i++)
-                            publishProgress(buffer[i]);
+                        publishProgress(buffer);
                     }
                 }
                 socket.close();
